@@ -1,4 +1,4 @@
-TARGET = audio
+TARGET = aud
 LIBS = -lasound
 CC = gcc
 CFLAGS = -g -Wall -std=c99

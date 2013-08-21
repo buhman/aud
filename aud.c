@@ -58,7 +58,7 @@ int main(int argc, char **argv)
       break;
     }
     if (frames < 4096) {
-      printf("end of file");
+      printf("end of file\n");
       break;
     }
   }
