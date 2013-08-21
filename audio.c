@@ -5,77 +5,18 @@
 #include <fcntl.h>
 #include <alsa/asoundlib.h>
 
+#include "alsa.h"
+
 void* buf;
-
-void set_hw_params(snd_pcm_t *handle,		    
-		   snd_pcm_access_t access_type,
-		   snd_pcm_format_t sample_format,
-		   unsigned int sample_rate,
-		   unsigned int channels)
-{
-  snd_pcm_hw_params_t *hw_params;
-  
-  snd_pcm_hw_params_malloc(&hw_params);
-
-  snd_pcm_hw_params_any(handle, hw_params);
-
-  snd_pcm_hw_params_set_access(handle,
-			       hw_params,
-			       access_type);
-  snd_pcm_hw_params_set_format(handle,
-			       hw_params,
-			       sample_format);
-
-  snd_pcm_hw_params_set_rate(handle,
-			     hw_params,
-			     sample_rate,
-			     0);
-
-  snd_pcm_hw_params_set_channels(handle,
-				 hw_params,
-				 channels);
-
-  snd_pcm_hw_params(handle, hw_params);
-
-  snd_pcm_hw_params_free(hw_params);
-}
-
-void set_sw_params(snd_pcm_t *handle,
-		   snd_pcm_uframes_t bufsize)
-{
-  snd_pcm_sw_params_t *sw_params;
-  
-  snd_pcm_sw_params_malloc(&sw_params);
-
-  snd_pcm_sw_params_current(handle, sw_params);
-
-  snd_pcm_sw_params_set_avail_min(handle, sw_params, bufsize);
-
-  snd_pcm_sw_params_set_start_threshold(handle, sw_params, 0U);
-
-  snd_pcm_sw_params(handle, sw_params);
-  
-  snd_pcm_sw_params_free(sw_params);
-}
-
-int playback(snd_pcm_t *handle, uint16_t frames, int fd) {
-  //printf("playback(): %d\n", frames);
-
-  int bytes = read(fd, buf, sizeof(uint16_t) * 4096);
-
-  int err;
-
-  if ((err = snd_pcm_writei(handle, buf, 4096)) < 0) {
-    printf("snd_pcm_writei(): %d : %s", err, snd_strerror(err));
-  }
-
-  return err;
-}
 
 int main(int argc, char **argv)
 {
-  int fd = open("foo.raw", O_RDONLY);
-  buf = malloc(sizeof(uint16_t) * 4096);
+  int fd;
+  if ((fd = open("../foo.raw", O_RDONLY)) == -1) {
+    fprintf(stderr, "open() : %s\n", snd_strerror(errno));
+    return 1;
+  }
+  buf = malloc(sizeof(uint16_t) * 32768);
   
   snd_pcm_t *handle;
 
@@ -108,12 +49,17 @@ int main(int argc, char **argv)
     }
 
     if ((frames = snd_pcm_avail_update(handle)) < 0) {
-      fprintf(stderr, "snd_pcm_avail_update() : %d : %s\n", strerror(errno));
+      fprintf(stderr, "snd_pcm_avail_update() : %d : %s\n", err, strerror(errno));
       break;
     }
 
-    if (playback(handle, frames, fd) != 4096) {
-      //break;
+    frames = read(fd, buf, sizeof(uint16_t) * frames) / sizeof(uint16_t);
+    if (playback(handle, frames, buf) != frames) {
+      break;
+    }
+    if (frames < 4096) {
+      printf("end of file");
+      break;
     }
   }
 
