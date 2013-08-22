@@ -51,14 +51,3 @@ void set_sw_params(snd_pcm_t *handle,
   
   snd_pcm_sw_params_free(sw_params);
 }
-
-int playback(snd_pcm_t *handle, uint16_t frames, void *buf) {
-
-  int err;
-
-  if ((err = snd_pcm_writei(handle, buf, frames)) < 0) {
-    printf("snd_pcm_writei(): %d : %s\n", err, snd_strerror(err));
-  }
-
-  return err;
-}

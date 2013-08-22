@@ -4,10 +4,14 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <alsa/asoundlib.h>
+#include <FLAC/stream_decoder.h>
 
 #include "alsa.h"
+#include "flac.h"
 
 void* buf;
+
+static snd_pcm_t *handle;
 
 int main(int argc, char **argv)
 {
@@ -18,8 +22,6 @@ int main(int argc, char **argv)
   }
   buf = malloc(sizeof(uint16_t) * 32768);
   
-  snd_pcm_t *handle;
-
   snd_pcm_open(&handle,
 	       "default",
 	       SND_PCM_STREAM_PLAYBACK,
@@ -38,30 +40,24 @@ int main(int argc, char **argv)
 
   fprintf(stderr, "snd_pcm_prepare() : %d : %s\n", err, snd_strerror(err));
 
-  for (;;) {
+  FLAC__StreamDecoder *decoder = FLAC__stream_decoder_new();
+  
+  FLAC__StreamDecoderInitStatus status = aud_open_flac("foo.flac",
+						       decoder,
+						       handle);
 
-    int err;
-    unsigned int frames;
-    
-    if ((err = snd_pcm_wait(handle, 10000)) < 0) {
-      fprintf(stderr, "snd_pcm_wait() : %d : %s\n", err, strerror(errno));
-      break;
-    }
-
-    if ((frames = snd_pcm_avail_update(handle)) < 0) {
-      fprintf(stderr, "snd_pcm_avail_update() : %d : %s\n", err, strerror(errno));
-      break;
-    }
-
-    frames = read(fd, buf, sizeof(uint16_t) * frames) / sizeof(uint16_t);
-    if (playback(handle, frames, buf) != frames) {
-      break;
-    }
-    if (frames < 4096) {
-      printf("end of file\n");
-      break;
-    }
+  if (status != FLAC__STREAM_DECODER_INIT_STATUS_OK) {
+    fprintf(stderr,
+	    "FLAC__stream_decoder_init_file() : %s",
+	    FLAC__StreamDecoderInitStatusString[status]);
+    goto cleanup;
   }
 
+  FLAC__stream_decoder_process_until_end_of_stream(decoder);
+  printf(FLAC__StreamDecoderStateString[FLAC__stream_decoder_get_state(decoder)]);
+
+  FLAC__stream_decoder_delete(decoder);
+  
+ cleanup:
   snd_pcm_close(handle);
 }

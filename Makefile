@@ -1,7 +1,7 @@
 TARGET = aud
-LIBS = -lasound
+LIBS = -lasound -lFLAC
 CC = gcc
-CFLAGS = -g -Wall -std=c99
+CFLAGS = -g -Wall -std=c99 -D__STDC_FORMAT_MACROS
 
 .PHONY: clean all default
 
