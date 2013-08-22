@@ -15,12 +15,6 @@ static snd_pcm_t *handle;
 
 int main(int argc, char **argv)
 {
-  int fd;
-  if ((fd = open("../foo.raw", O_RDONLY)) == -1) {
-    fprintf(stderr, "open() : %s\n", snd_strerror(errno));
-    return 1;
-  }
-  buf = malloc(sizeof(uint16_t) * 32768);
   
   snd_pcm_open(&handle,
 	       "default",
