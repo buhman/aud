@@ -54,24 +54,26 @@ write_cb(const FLAC__StreamDecoder *decoder,
 	 frame->header.blocksize,
 	 frame->header.number.sample_number);
 
-  
+
   uint16_t* l = malloc(sizeof(uint16_t) * frame->header.blocksize);
-  //uint16_t* r = malloc(sizeof(uint16_t) * frame->header.blocksize);
+  uint16_t* r = malloc(sizeof(uint16_t) * frame->header.blocksize);
   
   for (int i = 0; i < frame->header.blocksize; i++) {
     
     l[i] = (uint16_t)buffer[0][i];
-    //r[i] = (uint16_t)buffer[1][i];
+    r[i] = (uint16_t)buffer[1][i];
   }
-  
-  snd_pcm_writei(handle, l, frame->header.blocksize);
-  //snd_pcm_writei(handle, r, frame->header.blocksize);
-  
-  //snd_pcm_writei(handle, buffer, frame->header.blocksize * 2);
-  
-  free(l);
-  //free(r);
 
+  uint16_t * buf[] = {l, r};
+  
+  if ((alsa_err = snd_pcm_writen(handle, buf, frame->header.blocksize)) < 0) {
+    fprintf(stderr, "%s", snd_strerror(alsa_err));
+    return FLAC__STREAM_DECODER_WRITE_STATUS_ABORT;
+  }
+
+  free(l);
+  free(r);
+  
   return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
 }
 
