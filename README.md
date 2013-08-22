@@ -3,14 +3,16 @@ aud
 
 As per my plan for world domination, I continue with simple code that does nothing but play audio.
 
-Specifically, single-channel 48kHz s16le PCM from a file at `../foo.raw`. You can obtain one such file by encoding one of your favorite audio files with:
+This branch currently expects a 2-channel s16 48000kHz flac audio file called `foo.flac` as input, but will only playback one channel (I have no idea how the interleave format works).
 
-    ffmpeg -i my_favorite_song.mp3 -acodec pcm_s16le -ac 1 -ar 48000 -f s16le foo.raw
+You can obtain one such file by encoding one of your favorite audio files with:
+
+    ffmpeg -i my_favorite_song.mp3 ar 48000 -ac 2 -acodec flac foo.flac
 
 requirements
 ------------
 
-This one requires, at the moment, just `libasound`.
+This one requires, at the moment, just `libasound` and `libFLAC`.
 
 building
 --------
