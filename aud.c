@@ -22,7 +22,7 @@ int main(int argc, char **argv)
 	       0);
 
   set_hw_params(handle,
-		SND_PCM_ACCESS_RW_NONINTERLEAVED,
+		SND_PCM_ACCESS_RW_INTERLEAVED,
 		SND_PCM_FORMAT_S16_LE,
 		48000,
 		2);
