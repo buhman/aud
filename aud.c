@@ -42,7 +42,7 @@ int main(int argc, char **argv)
 
   if (status != FLAC__STREAM_DECODER_INIT_STATUS_OK) {
     fprintf(stderr,
-	    "FLAC__stream_decoder_init_file() : %s",
+	    "FLAC__stream_decoder_init_file() : %s\n",
 	    FLAC__StreamDecoderInitStatusString[status]);
     goto cleanup;
   }
