@@ -20,3 +20,7 @@ FLAC__StreamDecoderInitStatus
 aud_open_flac(const char *filename,
 	      FLAC__StreamDecoder *decoder,
 	      snd_pcm_t *handle);
+
+int
+aud_flac_play(char *filename,
+	      snd_pcm_t *handle);

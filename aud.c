@@ -34,24 +34,10 @@ int main(int argc, char **argv)
 
   fprintf(stderr, "snd_pcm_prepare() : %d : %s\n", err, snd_strerror(err));
 
-  FLAC__StreamDecoder *decoder = FLAC__stream_decoder_new();
+  if (argc > 1)
+    aud_flac_play(argv[1], handle);
+  else
+    fprintf(stderr, "filename required");
   
-  FLAC__StreamDecoderInitStatus status = aud_open_flac("foo.flac",
-						       decoder,
-						       handle);
-
-  if (status != FLAC__STREAM_DECODER_INIT_STATUS_OK) {
-    fprintf(stderr,
-	    "FLAC__stream_decoder_init_file() : %s\n",
-	    FLAC__StreamDecoderInitStatusString[status]);
-    goto cleanup;
-  }
-
-  FLAC__stream_decoder_process_until_end_of_stream(decoder);
-  printf(FLAC__StreamDecoderStateString[FLAC__stream_decoder_get_state(decoder)]);
-
-  FLAC__stream_decoder_delete(decoder);
-  
- cleanup:
   snd_pcm_close(handle);
 }

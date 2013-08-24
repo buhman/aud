@@ -74,7 +74,7 @@ write_cb(const FLAC__StreamDecoder *decoder,
 }
 
 FLAC__StreamDecoderInitStatus
-aud_open_flac(const char *filename,
+aud_flac_open(const char *filename,
 	      FLAC__StreamDecoder *decoder,
 	      snd_pcm_t *handle) {
 
@@ -90,4 +90,29 @@ aud_open_flac(const char *filename,
 					  handle);
 
   return status;
+}
+
+int
+aud_flac_play(char *filename,
+	      snd_pcm_t *handle) {
+  
+  FLAC__StreamDecoder *decoder = FLAC__stream_decoder_new();
+  
+  FLAC__StreamDecoderInitStatus status = aud_flac_open(filename,
+						       decoder,
+						       handle);
+
+  if (status != FLAC__STREAM_DECODER_INIT_STATUS_OK) {
+    fprintf(stderr,
+	    "FLAC__stream_decoder_init_file() : %s\n",
+	    FLAC__StreamDecoderInitStatusString[status]);
+    return 1;
+  }
+
+  FLAC__stream_decoder_process_until_end_of_stream(decoder);
+  printf(FLAC__StreamDecoderStateString[FLAC__stream_decoder_get_state(decoder)]);
+
+  FLAC__stream_decoder_delete(decoder);
+
+  return 0;
 }
