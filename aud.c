@@ -49,14 +49,14 @@ int main(int argc, char **argv)
   if (argc > 1) {
     const char *m = magic(argv[1]);
 
-    printf("container mimetype: %s\n", m);
+    printf("container: %s\n", m);
     
     if (!strcmp(m, "audio/x-flac"))
       aud_flac_play(argv[1], handle);
     
     else if (!strcmp(m, "application/ogg")) {
 
-      printf("content mimetype: %s\n", mime_type_names[aud_ogg_content(argv[1])]);
+      printf("stream: %s\n", mime_type_names[aud_ogg_content(argv[1])]);
       
       aud_vorbis_play(argv[1], handle);
     }

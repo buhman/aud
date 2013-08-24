@@ -4,12 +4,13 @@
 #include <alsa/asoundlib.h>
 #include <FLAC/stream_decoder.h>
 
+#include "status.h"
+#include "alsa.h"
+
 static uint64_t total_samples = 0;
 static unsigned sample_rate = 0;
 static unsigned channels = 0;
 static unsigned bps = 0;
-
-static int alsa_err;
 
 void
 error_cb(const FLAC__StreamDecoder *decoder,
@@ -46,17 +47,7 @@ write_cb(const FLAC__StreamDecoder *decoder,
 	 const int32_t * const buffer[],
 	 void *handle) {
 
-  if ((alsa_err = snd_pcm_wait(handle, 1000)) < 0) {
-    fprintf(stderr, "snd_pcm_wait() : %s", strerror(errno));
-  }
-
   int16_t* ibuf = malloc(sizeof(uint16_t) * frame->header.blocksize * 2);
-
-  printf("\r\e[Jframe: %" PRIu64 "/%" PRIu64 " ; %.2f%%",
-	 frame->header.number.sample_number,
-	 total_samples,
-	 (double)(frame->header.number.sample_number / total_samples));
-  fflush(stdout);
   
   for (int i = 0; i < frame->header.blocksize; i++) {
     
@@ -64,8 +55,9 @@ write_cb(const FLAC__StreamDecoder *decoder,
     ibuf[i * 2 + 1] = (int16_t)buffer[1][i];
   }
 
-  if ((alsa_err = snd_pcm_writei(handle, (void*)ibuf, frame->header.blocksize)) < 0) {
-    fprintf(stderr, "%s", snd_strerror(alsa_err));
+  aud_status(frame->header.number.sample_number, total_samples);
+
+  if (aud_write_buf(handle, (void*)ibuf, frame->header.blocksize) < 0) {
     return FLAC__STREAM_DECODER_WRITE_STATUS_ABORT;
   }
 

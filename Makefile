@@ -1,7 +1,7 @@
 TARGET = aud
-LIBS = -lasound -lFLAC -lvorbisfile -lmagic -loggz -logg
+LIBS = -lasound -lFLAC -lvorbisfile -lmagic -loggz -logg -lopusfile
 CC = gcc
-CFLAGS = -g -Wall -std=c99 -D__STDC_FORMAT_MACROS
+CFLAGS = -g -Wall -std=c99 -D__STDC_FORMAT_MACROS -I/usr/include/opus
 
 .PHONY: clean all default
 

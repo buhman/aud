@@ -7,4 +7,6 @@ void set_hw_params(snd_pcm_t *handle,
 void set_sw_params(snd_pcm_t *handle,
 		   snd_pcm_uframes_t bufsize);
 
-int playback(snd_pcm_t *handle, uint16_t frames, void *buf);
+int aud_write_buf(snd_pcm_t *handle,
+		  void *buf,
+		  int frames);

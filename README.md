@@ -13,7 +13,7 @@ Stream content detection is only partially complete.
 requirements
 ------------
 
-`libasound`, `libFLAC`, `libvorbis`, `libmagic`, and `liboggz>1.1.1` are mandatory dependencies.
+`libasound`, `libFLAC`, `libvorbis`, `libopus`, `libmagic`, and `liboggz>1.1.1` are mandatory dependencies.
 
 > Note: you *must* use a post-1.1.1 release of liboggz
 

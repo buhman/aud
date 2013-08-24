@@ -1,4 +1,6 @@
 #include <stdint.h>
+#include <errno.h>
+#include <strings.h>
 #include <alsa/asoundlib.h>
 
 void set_hw_params(snd_pcm_t *handle,		    
@@ -50,4 +52,23 @@ void set_sw_params(snd_pcm_t *handle,
   snd_pcm_sw_params(handle, sw_params);
   
   snd_pcm_sw_params_free(sw_params);
+}
+
+int aud_write_buf(snd_pcm_t *handle,
+		  void *buf,
+		  int frames)
+{
+  int alsa_err;
+  
+  if ((alsa_err = snd_pcm_wait(handle, 1000)) < 0) {
+    fprintf(stderr, "snd_pcm_wait() : %s\n", strerror(errno));
+    return -1;
+  }
+
+  if ((alsa_err = snd_pcm_writei(handle, buf, frames)) < 0) {
+    fprintf(stderr, "%s\n", snd_strerror(alsa_err));
+    return -1;
+  }
+
+  return 0;
 }
