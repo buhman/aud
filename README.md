@@ -3,22 +3,21 @@ aud
 
 As per my plan for world domination, I continue with simple code that does nothing but play audio.
 
+Currently, only audio encoded at 48kHz, 2ch, s16le are supported. Multiple codecs are also supported:
 
-
-You can obtain one such file by encoding one of your favorite audio files with:
-
-    ffmpeg -i my_favorite_song.mp3 ar 48000 -ac 2 -acodec flac foo.flac
-
-or
-
-    ffmpeg -i my_favorite_song.mp3 ar 48000 -ac 2 -vn -acodec libvorbis foo.ogg
+*  [flac][xflac]
+*  [vorbis][xvorbis]
 
 requirements
 ------------
 
-This one requires, at the moment, just `libasound` and `libFLAC`.
+`libasound`, `libFLAC`, `libvorbis`, and `libmagic` are mandatory dependencies.
 
 building
 --------
 
 Running `make` will create an `aud` binary.
+
+[xflac]: https://xiph.org/flac/
+[xvorbis]: http://www.vorbis.com/
+[xopus]: http://www.opus-codec.org/
