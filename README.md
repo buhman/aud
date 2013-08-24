@@ -8,10 +8,12 @@ Currently, only audio encoded at 48kHz, 2ch, s16le are supported. Multiple codec
 *  [flac][xflac]
 *  [vorbis][xvorbis]
 
+Stream content detection is only partially complete.
+
 requirements
 ------------
 
-`libasound`, `libFLAC`, `libvorbis`, and `libmagic` are mandatory dependencies.
+`libasound`, `libFLAC`, `libvorbis`, `libmagic`, and `liboggz` are mandatory dependencies.
 
 building
 --------
