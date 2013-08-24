@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <errno.h>
+#include <magic.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <alsa/asoundlib.h>
@@ -12,6 +13,15 @@
 void* buf;
 
 static snd_pcm_t *handle;
+
+const char* magic(const char *filename) {
+
+  magic_t cookie = magic_open(MAGIC_MIME_TYPE);
+  magic_load(cookie, NULL);
+  const char *m = magic_file(cookie, filename);
+
+  return m;
+}
 
 int main(int argc, char **argv)
 {
@@ -35,11 +45,19 @@ int main(int argc, char **argv)
   fprintf(stderr, "snd_pcm_prepare() : %d : %s\n", err, snd_strerror(err));
 
   if (argc > 1) {
-    //aud_flac_play(argv[1], handle);
-    aud_vorbis_play(argv[1], handle);
+    const char *m = magic(argv[1]);
+    
+    if (!strcmp(m, "audio/x-flac"))
+      aud_flac_play(argv[1], handle);
+    
+    else if (!strcmp(m, "application/ogg"))
+      aud_vorbis_play(argv[1], handle);
+    
+    else
+      fprintf(stderr, "unrecognized magic: %s\n", m);
   }
   else
-    fprintf(stderr, "filename required");
+    fprintf(stderr, "filename required\n");
   
   snd_pcm_close(handle);
 }

@@ -17,6 +17,7 @@ int aud_vorbis_play(char *filename,
     
   if ((verr = ov_fopen(filename, vf)) < 0) {
     fprintf(stderr, "ov_fopen() : %d\n", verr);
+    return -1;
   }
   
   vorbis_info *vi = ov_info(vf,-1);

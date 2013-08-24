@@ -3,11 +3,15 @@ aud
 
 As per my plan for world domination, I continue with simple code that does nothing but play audio.
 
-This branch currently expects a 2-channel s16 48000kHz flac audio file called `foo.flac`.
+
 
 You can obtain one such file by encoding one of your favorite audio files with:
 
     ffmpeg -i my_favorite_song.mp3 ar 48000 -ac 2 -acodec flac foo.flac
+
+or
+
+    ffmpeg -i my_favorite_song.mp3 ar 48000 -ac 2 -vn -acodec libvorbis foo.ogg
 
 requirements
 ------------

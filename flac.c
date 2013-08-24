@@ -50,12 +50,13 @@ write_cb(const FLAC__StreamDecoder *decoder,
     fprintf(stderr, "snd_pcm_wait() : %s", strerror(errno));
   }
 
-  printf("bs: %d sn: %" PRIu64 "\n",
-	 frame->header.blocksize,
-	 frame->header.number.sample_number);
-
-
   int16_t* ibuf = malloc(sizeof(uint16_t) * frame->header.blocksize * 2);
+
+  printf("\r\e[Jframe: %" PRIu64 "/%" PRIu64 " ; %.2f%%",
+	 frame->header.number.sample_number,
+	 total_samples,
+	 (double)(frame->header.number.sample_number / total_samples));
+  fflush(stdout);
   
   for (int i = 0; i < frame->header.blocksize; i++) {
     
