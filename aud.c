@@ -25,7 +25,7 @@ int main(int argc, char **argv)
 		SND_PCM_ACCESS_RW_INTERLEAVED,
 		SND_PCM_FORMAT_S16_LE,
 		48000,
-		1);
+		2);
 
   set_sw_params(handle,
 		4096);
