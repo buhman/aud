@@ -4,10 +4,10 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <alsa/asoundlib.h>
-#include <FLAC/stream_decoder.h>
 
 #include "alsa.h"
 #include "flac.h"
+#include "vorbis.h"
 
 void* buf;
 
@@ -25,7 +25,7 @@ int main(int argc, char **argv)
 		SND_PCM_ACCESS_RW_INTERLEAVED,
 		SND_PCM_FORMAT_S16_LE,
 		48000,
-		2);
+		1);
 
   set_sw_params(handle,
 		4096);
@@ -35,7 +35,7 @@ int main(int argc, char **argv)
   fprintf(stderr, "snd_pcm_prepare() : %d : %s\n", err, snd_strerror(err));
 
   if (argc > 1)
-    aud_flac_play(argv[1], handle);
+    aud_vorbis_play(argv[1], handle);
   else
     fprintf(stderr, "filename required");
   

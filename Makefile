@@ -1,5 +1,5 @@
 TARGET = aud
-LIBS = -lasound -lFLAC
+LIBS = -lasound -lFLAC -lvorbisfile
 CC = gcc
 CFLAGS = -g -Wall -std=c99 -D__STDC_FORMAT_MACROS
 

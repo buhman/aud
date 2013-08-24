@@ -1,5 +1,7 @@
 #pragma once
 
+#include <FLAC/stream_decoder.h>
+
 void
 error_cb(const FLAC__StreamDecoder *decoder,
 	 const FLAC__StreamDecoderErrorStatus status,
