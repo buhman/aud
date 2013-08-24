@@ -34,8 +34,10 @@ int main(int argc, char **argv)
 
   fprintf(stderr, "snd_pcm_prepare() : %d : %s\n", err, snd_strerror(err));
 
-  if (argc > 1)
+  if (argc > 1) {
+    //aud_flac_play(argv[1], handle);
     aud_vorbis_play(argv[1], handle);
+  }
   else
     fprintf(stderr, "filename required");
   
