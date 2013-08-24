@@ -10,16 +10,16 @@ const char * const mime_type_names[] = {
   "audio/x-oggpcm",
   "text/cmml",
   "application/x-annodex-2",
-  NULL, /* Skeleton */
+  "application/octet-stream", /* Skeleton */
   "audio/flac",
   "audio/flac",
-  NULL, /* AnxData */
+  "application/octet-stream", /* AnxData */
   "audio/celt",
   "application/x-kate",
   "video/dirac",
   "audio/x-opus",
   "video/vp8",
-  NULL /* UNKNOWN */
+  "application/octet-stream" /* UNKNOWN */
 };
 
 

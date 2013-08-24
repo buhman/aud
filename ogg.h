@@ -8,3 +8,6 @@ struct oi_info {
   OGGZ *oggz;
   OggzTable *tracks;
 };
+
+OggzStreamContent
+aud_ogg_content(char *filename);

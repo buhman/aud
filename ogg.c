@@ -6,17 +6,17 @@
 
 #include "ogg.h"
 
-static const OggzStreamContent;
-oggz_info_apply(oi_func func, oi_info *info) {
+OggzStreamContent
+oggz_info_apply(oi_info *info) {
 
   long serialno;
   
-  int ts = oggz_table_size(info->tracks);
+  //int ts = oggz_table_size(info->tracks);
 
-  for (int i = 0; i < ts; i++) {
-    oggz_table_nth(info->tracks, i, &serialno);
-    return oggz_stream_get_content(info->oggz, serialno);
-  }
+  /* FIXME: here we take just the first track; but there could be more */
+  oggz_table_nth(info->tracks, 0, &serialno);
+  
+  return oggz_stream_get_content(info->oggz, serialno);
 }
 
 static int
@@ -45,8 +45,7 @@ oi_pass(oi_info *info) {
 
   while(oggz_read(info->oggz, BLOCKSIZE) > 0);
 }
-
-static OggzStreamContent
+OggzStreamContent
 aud_ogg_content(char *filename) {
 
   OGGZ *oggz;
@@ -63,7 +62,7 @@ aud_ogg_content(char *filename) {
 
   oi_pass(&info);
 
-  content = oggz_info_apply(print_codec_name, &info);
+  content = oggz_info_apply(&info);
 
   oggz_table_delete(info.tracks);
   oggz_close(oggz);
