@@ -3,7 +3,7 @@
 #include <strings.h>
 #include <alsa/asoundlib.h>
 
-void
+static void
 set_hw_params(snd_pcm_t *handle,		    
 	      snd_pcm_access_t access_type,
 	      snd_pcm_format_t sample_format,
@@ -37,7 +37,7 @@ set_hw_params(snd_pcm_t *handle,
   snd_pcm_hw_params_free(hw_params);
 }
 
-void
+static void
 set_sw_params(snd_pcm_t *handle,
 	      snd_pcm_uframes_t bufsize)
 {
