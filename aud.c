@@ -17,8 +17,6 @@
 #include "mimetypes.h"
 #include "demuxers.h"
 
-static void* buf;
-
 static snd_pcm_t *handle;
 
 static struct hsearch_data *demuxer_table;
@@ -78,26 +76,31 @@ main(int argc, char **argv)
 
   demuxer_table = aud_create_demuxer_table();
   
-  snd_pcm_open(&handle,
-	       "default",
-	       SND_PCM_STREAM_PLAYBACK,
-	       0);
- 
+  if ((err = snd_pcm_open(&handle,
+			  "default",
+			  SND_PCM_STREAM_PLAYBACK,
+			  0)) < 0) {
+    fprintf(stderr, "snd_pcm_open() : %s\n", snd_strerror(err));
+    return -1;
+  }
+
+  printf("pcm name: %s\n", snd_pcm_name(handle));
+
   for (int i = optind; i < argc; ++i) {
 
     printf("opening %s\n", argv[i]);
     
     if ((c.key = magic(argv[i])) == NULL) {
-      fprintf(stderr, "magic() : %s", strerror(errno));
+      fprintf(stderr, "magic() : %s\n", strerror(errno));
       continue;
     }
     
-    if ((demuxer = hsearch_r(c, FIND, &ret, demuxer_table)) == 0) {
-      fprintf(stderr, "unknown demuxer: %s", c.key);
+    if (hsearch_r(c, FIND, &ret, demuxer_table) == 0) {
+      fprintf(stderr, "unknown demuxer: %s\n", c.key);
       continue;
     }
 
-    printf("demuxer: %s\n", c.key);
+    demuxer = *(int*)ret->data;
 
     switch (demuxer) {
     case AUD_DEMUXER_OGG:
@@ -106,10 +109,10 @@ main(int argc, char **argv)
       
       switch (o_codec) {
       case OGGZ_CONTENT_VORBIS:
-	printf("using vorbis\n");
+	aud_vorbis_play(argv[i], handle);
 	break;
       case OGGZ_CONTENT_FLAC:
-	printf("using flac\n");
+        aud_flac_play(argv[i], handle);
 	break;
       default:
 	fprintf(stderr, "unimplemented codec: %s\n", mime_type_names[o_codec]);
@@ -118,29 +121,16 @@ main(int argc, char **argv)
       }
       break;
     case AUD_DEMUXER_FLAC:
-      printf("using flac");
+      aud_flac_play(argv[i], handle);
       break;
     default:
       fprintf(stderr, "unimplemented demuxer: %d\n", demuxer);
       continue;
       break;
     }
-
-    set_hw_params(handle,
-		  SND_PCM_ACCESS_RW_INTERLEAVED,
-		  SND_PCM_FORMAT_S16_LE,
-		  48000,
-		  2);
-
-    set_sw_params(handle,
-		  4096);
-
-    if ((err = snd_pcm_prepare(handle)) < 0) {
-      fprintf(stderr, "snd_pcm_prepare() : %s\n", snd_strerror(err));
-      goto cleanup;
-    }
   }
   
- cleanup:
   snd_pcm_close(handle);
+
+  return 0;
 }

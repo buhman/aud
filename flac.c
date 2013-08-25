@@ -12,7 +12,7 @@ static unsigned sample_rate = 0;
 static unsigned channels = 0;
 static unsigned bps = 0;
 
-void
+static void
 error_cb(const FLAC__StreamDecoder *decoder,
 	 const FLAC__StreamDecoderErrorStatus status,
 	 void *client_data) {
@@ -21,10 +21,10 @@ error_cb(const FLAC__StreamDecoder *decoder,
 	  FLAC__StreamDecoderErrorStatusString[status]);
 }
 
-void
+static void
 meta_cb(const FLAC__StreamDecoder *decoder,
 	const FLAC__StreamMetadata *metadata,
-	void *client_data) {
+	void *handle) {
   
   if(metadata->type == FLAC__METADATA_TYPE_STREAMINFO) {
     
@@ -38,10 +38,12 @@ meta_cb(const FLAC__StreamDecoder *decoder,
 	    sample_rate,
 	    channels,
 	    bps);
+
+    aud_prepare_handle(handle, sample_rate, channels);
   }
 }
 
-FLAC__StreamDecoderWriteStatus
+static FLAC__StreamDecoderWriteStatus
 write_cb(const FLAC__StreamDecoder *decoder,
 	 const FLAC__Frame *frame,
 	 const int32_t * const buffer[],
@@ -99,11 +101,11 @@ aud_flac_play(char *filename,
     fprintf(stderr,
 	    "FLAC__stream_decoder_init_file() : %s\n",
 	    FLAC__StreamDecoderInitStatusString[status]);
-    return 1;
+    return -1;
   }
 
   FLAC__stream_decoder_process_until_end_of_stream(decoder);
-  printf(FLAC__StreamDecoderStateString[FLAC__stream_decoder_get_state(decoder)]);
+  printf("\n%s\n", FLAC__StreamDecoderStateString[FLAC__stream_decoder_get_state(decoder)]);
 
   FLAC__stream_decoder_delete(decoder);
 

@@ -25,7 +25,6 @@ int aud_vorbis_play(char *filename,
   vorbis_info *vi = ov_info(vf,-1);
   
   printf("c: %d ; r: %ld\n", vi->channels, vi->rate);
-  
 
   while ((verr = ov_read(vf, buf,
 			 4096, 0, 2, 1,
