@@ -5,7 +5,6 @@
 #include <search.h>
 
 #include <magic.h>
-
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <alsa/asoundlib.h>
@@ -45,8 +44,15 @@ usage()
 	  program_invocation_short_name);
   
   fputs("Options:\n"
-        "  -h, --help display this help and exit\n",
+        "  -h, --help     display this help and exit\n"
+	"  -d, --demuxer  manually override demuxer selection\n\n",
 	stderr);
+
+  fputs("Demuxers:\n", stderr);
+
+  for (int i = 0; i < demuxer_table_size; i++) {
+    fprintf(stderr, " %s\n", demuxer_mimetypes[i]);
+  }
   
   exit(-1);
 }
@@ -57,15 +63,21 @@ main(int argc, char **argv)
   int err;
   int opt;
 
-  ENTRY c, *ret; /* container, return */
   enum demuxer demuxer;
+  char *demuxer_mimetype = NULL;
   OggzStreamContent o_codec;
 
-  while ((opt = getopt_long(argc, argv, "h", opts, NULL)) > 0) {
+  while ((opt = getopt_long(argc, argv, "hd:c:", opts, NULL)) > 0) {
     
     switch (opt) {
     case 'h':
       usage();
+      break;
+    case 'd':
+      printf("demuxer override: %s\n", optarg);
+      demuxer_mimetype = optarg;
+      break;
+    case 'c':
       break;
     }
   }
@@ -90,22 +102,25 @@ main(int argc, char **argv)
 
     printf("opening %s\n", argv[i]);
     
-    if ((c.key = magic(argv[i])) == NULL) {
+    if (demuxer_mimetype == NULL &&
+	(demuxer_mimetype = magic(argv[i])) == NULL) {
+      
       fprintf(stderr, "magic() : %s\n", strerror(errno));
       continue;
     }
     
-    if (hsearch_r(c, FIND, &ret, demuxer_table) == 0) {
-      fprintf(stderr, "unknown demuxer: %s\n", c.key);
+    if ((demuxer = aud_get_demuxer_from_mimetype(demuxer_mimetype,
+						 demuxer_table)) < 0) {
       continue;
     }
-
-    demuxer = *(int*)ret->data;
 
     switch (demuxer) {
     case AUD_DEMUXER_OGG:
       
-      o_codec = aud_ogg_content(argv[i]);
+      if ((int)(o_codec = aud_ogg_content(argv[i])) < 0) {
+	fprintf(stderr, "invalid stream: %s", argv[i]);
+	continue;
+      }
       
       switch (o_codec) {
       case OGGZ_CONTENT_VORBIS:

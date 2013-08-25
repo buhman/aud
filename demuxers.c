@@ -2,10 +2,11 @@
 #include <stdio.h>
 #include <search.h>
 #include <string.h>
+#include <errno.h>
 
-static const int demuxer_table_size = 2;
+const int demuxer_table_size = 2;
 
-static char *demuxer_mimetypes[] = {
+const char * const demuxer_mimetypes[] = {
   "audio/x-flac",
   "application/ogg"
 };
@@ -22,7 +23,12 @@ aud_create_demuxer_table()
   hcreate_r(demuxer_table_size, htab);
   
   for (i = 0; i < demuxer_table_size; i++) {
-    d.key = demuxer_mimetypes[i];
+
+    const char *sc = demuxer_mimetypes[i];
+    char *s = malloc(strlen(sc));
+    strcpy(s, sc);
+
+    d.key = s;
 
     int *data = malloc(sizeof(int));
     memcpy(data, &i, sizeof(int));
@@ -41,4 +47,20 @@ void
 aud_destroy_demuxer_table(struct hsearch_data *htab)
 {
   hdestroy_r(htab);
+}
+
+int
+aud_get_demuxer_from_mimetype(char *mime,
+			      struct hsearch_data *demuxer_table)
+{
+  ENTRY c, *ret;
+
+  c.key = mime;
+    
+  if (hsearch_r(c, FIND, &ret, demuxer_table) == 0) {
+    fprintf(stderr, "unknown demuxer: %s\n", c.key);
+    return -1;
+  }
+
+  return *(int*)ret->data;
 }

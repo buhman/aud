@@ -52,7 +52,7 @@ aud_ogg_content(char *filename) {
   oi_info info;
   OggzStreamContent content;
   
-  if (!(oggz = oggz_open("test.ogg", OGGZ_READ|OGGZ_AUTO))) {
+  if (!(oggz = oggz_open(filename, OGGZ_READ|OGGZ_AUTO))) {
     fprintf(stderr, "oggz_open(): %s", strerror(errno));
     return -1;
   }
