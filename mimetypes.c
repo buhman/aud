@@ -21,5 +21,3 @@ const char * const mime_type_names[] = {
   "video/vp8",
   "application/octet-stream" /* UNKNOWN */
 };
-
-

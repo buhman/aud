@@ -1,7 +1,11 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <errno.h>
+#include <getopt.h>
+#include <search.h>
+
 #include <magic.h>
+
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <alsa/asoundlib.h>
@@ -12,12 +16,20 @@
 #include "ogg.h"
 #include "mimetypes.h"
 
-void* buf;
+static void* buf;
 
 static snd_pcm_t *handle;
 
-const char* magic(const char *filename) {
+static const struct option opts[] = {
+  {"help", no_argument, 0, 'h'},
+  {"demuxer", required_argument, 0, 'd'},
+  {"codec", required_argument, 0, 'c'},
+  {0, 0, 0, 0},
+};
 
+static const char*
+magic(const char *filename)
+{
   magic_t cookie = magic_open(MAGIC_MIME_TYPE);
   magic_load(cookie, NULL);
   const char *m = magic_file(cookie, filename);
@@ -25,46 +37,63 @@ const char* magic(const char *filename) {
   return m;
 }
 
-int main(int argc, char **argv)
+static void
+usage()
 {
+  fprintf(stderr, "usage: %s [options] <filename(s)>\n",
+	  program_invocation_short_name);
   
+  fputs("Options:\n"
+        "  -h, --help display this help and exit\n",
+	stderr);
+  
+  exit(-1);
+}
+
+int
+main(int argc, char **argv)
+{
+  int err;
+  int opt;
+  ENTRY c; /* container */
+
+  while ((opt = getopt_long(argc, argv, "h", opts, NULL)) > 0) {
+    
+    switch (opt) {
+    case 'h':
+      usage();
+      break;
+    }
+  }
+
+  if (optind == argc) {
+    usage();
+  } 
+    
   snd_pcm_open(&handle,
 	       "default",
 	       SND_PCM_STREAM_PLAYBACK,
 	       0);
+ 
+  for (int i = optind; i < argc; ++i) {
 
-  set_hw_params(handle,
-		SND_PCM_ACCESS_RW_INTERLEAVED,
-		SND_PCM_FORMAT_S16_LE,
-		48000,
-		2);
+    printf("playing %s\n", argv[i]);
 
-  set_sw_params(handle,
-		4096);
+    set_hw_params(handle,
+		  SND_PCM_ACCESS_RW_INTERLEAVED,
+		  SND_PCM_FORMAT_S16_LE,
+		  48000,
+		  2);
 
-  int err = snd_pcm_prepare(handle);
+    set_sw_params(handle,
+		  4096);
 
-  fprintf(stderr, "snd_pcm_prepare() : %d : %s\n", err, snd_strerror(err));
-  
-  if (argc > 1) {
-    const char *m = magic(argv[1]);
-
-    printf("container: %s\n", m);
-    
-    if (!strcmp(m, "audio/x-flac"))
-      aud_flac_play(argv[1], handle);
-    
-    else if (!strcmp(m, "application/ogg")) {
-
-      printf("stream: %s\n", mime_type_names[aud_ogg_content(argv[1])]);
-      
-      aud_vorbis_play(argv[1], handle);
+    if ((err = snd_pcm_prepare(handle)) < 0) {
+      fprintf(stderr, "snd_pcm_prepare() : %s\n", snd_strerror(err));
+      goto cleanup;
     }
-    else
-      fprintf(stderr, "unrecognized magic: %s\n", m);
   }
-  else
-    fprintf(stderr, "filename required\n");
   
+ cleanup:
   snd_pcm_close(handle);
 }
