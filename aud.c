@@ -45,7 +45,7 @@ int main(int argc, char **argv)
   int err = snd_pcm_prepare(handle);
 
   fprintf(stderr, "snd_pcm_prepare() : %d : %s\n", err, snd_strerror(err));
-
+  
   if (argc > 1) {
     const char *m = magic(argv[1]);
 
