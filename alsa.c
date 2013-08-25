@@ -86,8 +86,8 @@ aud_prepare_handle(snd_pcm_t *handle,
   set_hw_params(handle,
 		SND_PCM_ACCESS_RW_INTERLEAVED,
 		SND_PCM_FORMAT_S16_LE,
-		48000,
-		2);
+		sample_rate,
+		channels);
 
   set_sw_params(handle,
 		4096);
