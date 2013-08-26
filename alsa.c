@@ -56,6 +56,29 @@ set_sw_params(snd_pcm_t *handle,
   snd_pcm_sw_params_free(sw_params);
 }
 
+
+static int
+stream_recovery(snd_pcm_t *handle, int err)
+{
+  if (err == -EPIPE) {
+    err = snd_pcm_prepare(handle);
+    if (err < 0)
+      fprintf(stderr, "snd_pcm_prepare() : %s\n", snd_strerror(err));
+    return 0;
+  }
+  else if (err == -ESTRPIPE) {
+    while ((err = snd_pcm_resume(handle)) == -EAGAIN)
+      sleep(1); /* wait until the suspend flag is released */
+    if (err < 0) {
+      err = snd_pcm_prepare(handle);
+      if (err < 0)
+	fprintf(stderr, "snd_pcm_prepare() : %s\n", snd_strerror(err));
+    }
+    return 0;
+  }
+  return err;
+}
+
 int
 aud_write_buf(snd_pcm_t *handle,
 	      void *buf,
@@ -64,13 +87,18 @@ aud_write_buf(snd_pcm_t *handle,
   int alsa_err;
   
   if ((alsa_err = snd_pcm_wait(handle, 1000)) < 0) {
-    fprintf(stderr, "snd_pcm_wait() : %s\n", strerror(errno));
+    fprintf(stderr, "\nsnd_pcm_wait() : %s\n", strerror(errno));
     return -1;
   }
 
   if ((alsa_err = snd_pcm_writei(handle, buf, frames)) < 0) {
-    fprintf(stderr, "%s\n", snd_strerror(alsa_err));
-    return -1;
+    fprintf(stderr, "\nsnd_pcm_writei(): %s\n", snd_strerror(alsa_err));
+    if (alsa_err != -EAGAIN &&
+	(alsa_err = stream_recovery(handle, alsa_err)) < 0) {
+      return -1;
+    }
+
+    printf("stream_recovery() : %s\n", snd_strerror(alsa_err));
   }
 
   return 0;
