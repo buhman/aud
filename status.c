@@ -2,8 +2,9 @@
 #include <stdio.h>
 #include <stdint.h>
 
-void aud_status(uint64_t frame,
-		uint64_t total_frames)
+void
+aud_stream_status(uint64_t frame,
+		  uint64_t total_frames)
 {
 		
   printf("\r\e[Jframe: %" PRIu64 "/%" PRIu64 " ; %.1f%%",
@@ -12,4 +13,22 @@ void aud_status(uint64_t frame,
 	 100 * (double)frame / (double)total_frames);
   fflush(stdout);
 
+}
+
+void
+aud_stream_info(uint64_t total_frames,
+		int sample_rate,
+		int channels,
+		int sample_size)
+{
+  printf("t: %" PRIu64 " ; r: %d ; c: %d ; b: %d\n",
+	 total_frames,
+	 sample_rate,
+	 channels,
+	 sample_size);
+
+  if (sample_size != 16) {
+    fprintf(stderr, "WARNING: stream decoder reports sample size != 16\n"
+	    "  white noise and/or a segfault follows\n");
+  }
 }

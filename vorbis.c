@@ -7,6 +7,8 @@
 #include "alsa.h"
 #include "status.h"
 
+static int word_size = 2;
+
 int aud_vorbis_play(char *filename,
 		    snd_pcm_t *handle) {
 
@@ -23,18 +25,18 @@ int aud_vorbis_play(char *filename,
   }
   
   vorbis_info *vi = ov_info(vf,-1);
-  
-  printf("c: %d ; r: %ld\n", vi->channels, vi->rate);
+
+  aud_stream_info(vf->end, vi->rate, vi->channels, 8 * word_size);
 
   aud_prepare_handle(handle, vi->rate, vi->channels);
 
   while ((verr = ov_read(vf, buf,
-			 4096, 0, 2, 1,
+			 4096, 0, word_size, 1,
 			 &bitstream)) != 0) {
 
-    aud_status(vf->offset, vf->end);
+    aud_stream_status(vf->offset, vf->end);
     
-    if (aud_write_buf(handle, buf, verr / 4) < 0) {
+    if (aud_write_buf(handle, buf, verr / (word_size * vi->channels)) < 0) {
       return -1;
     }
   }

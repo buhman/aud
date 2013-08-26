@@ -33,11 +33,7 @@ meta_cb(const FLAC__StreamDecoder *decoder,
     channels = metadata->data.stream_info.channels;
     bps = metadata->data.stream_info.bits_per_sample;
 
-    fprintf(stderr, "t: %" PRIu64 " ; r: %d ; c: %d ; b %d\n",
-	    total_samples,
-	    sample_rate,
-	    channels,
-	    bps);
+    aud_stream_info(total_samples, sample_rate, channels, bps);
 
     aud_prepare_handle(handle, sample_rate, channels);
   }
@@ -57,7 +53,7 @@ write_cb(const FLAC__StreamDecoder *decoder,
     ibuf[i * 2 + 1] = (int16_t)buffer[1][i];
   }
 
-  aud_status(frame->header.number.sample_number, total_samples);
+  aud_stream_status(frame->header.number.sample_number, total_samples);
 
   if (aud_write_buf(handle, (void*)ibuf, frame->header.blocksize) < 0) {
     return FLAC__STREAM_DECODER_WRITE_STATUS_ABORT;
