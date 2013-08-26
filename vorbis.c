@@ -28,7 +28,7 @@ int aud_vorbis_play(char *filename,
 
   aud_stream_info(vf->end, vi->rate, vi->channels, 8 * word_size);
 
-  aud_prepare_handle(handle, vi->rate, vi->channels);
+  aud_prepare_handle(handle, vi->rate, vi->channels, 8 * word_size);
 
   while ((verr = ov_read(vf, buf,
 			 4096, 0, word_size, 1,

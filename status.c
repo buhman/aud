@@ -26,9 +26,4 @@ aud_stream_info(uint64_t total_frames,
 	 sample_rate,
 	 channels,
 	 sample_size);
-
-  if (sample_size != 16) {
-    fprintf(stderr, "WARNING: stream decoder reports sample size != 16\n"
-	    "  white noise and/or a segfault follows\n");
-  }
 }

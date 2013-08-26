@@ -6,4 +6,5 @@ aud_write_buf(snd_pcm_t *handle,
 void
 aud_prepare_handle(snd_pcm_t *handle,
 		   int sample_rate,
-		   int channels);
+		   int channels,
+		   int sample_size);

@@ -12,6 +12,37 @@ static unsigned sample_rate = 0;
 static unsigned channels = 0;
 static unsigned bps = 0;
 
+
+static void*
+interleave_samples_s32(const FLAC__Frame *frame,
+		       const int32_t * const buffer[])
+{
+  int32_t* ibuf = malloc(sizeof(uint32_t) * frame->header.blocksize * 2);
+  
+  for (int i = 0; i < frame->header.blocksize; i++) {
+    
+    ibuf[i * 2] = (int32_t)buffer[0][i];
+    ibuf[i * 2 + 1] = (int32_t)buffer[1][i];
+  }
+
+  return ibuf;
+}
+
+static void*
+interleave_samples_s16(const FLAC__Frame *frame,
+		       const int32_t * const buffer[])
+{
+  int16_t* ibuf = malloc(sizeof(uint16_t) * frame->header.blocksize * 2);
+  
+  for (int i = 0; i < frame->header.blocksize; i++) {
+    
+    ibuf[i * 2] = (int16_t)buffer[0][i];
+    ibuf[i * 2 + 1] = (int16_t)buffer[1][i];
+  }
+
+  return ibuf;
+}
+
 static void
 error_cb(const FLAC__StreamDecoder *decoder,
 	 const FLAC__StreamDecoderErrorStatus status,
@@ -35,7 +66,7 @@ meta_cb(const FLAC__StreamDecoder *decoder,
 
     aud_stream_info(total_samples, sample_rate, channels, bps);
 
-    aud_prepare_handle(handle, sample_rate, channels);
+    aud_prepare_handle(handle, sample_rate, channels, bps);
   }
 }
 
@@ -45,17 +76,24 @@ write_cb(const FLAC__StreamDecoder *decoder,
 	 const int32_t * const buffer[],
 	 void *handle) {
 
-  int16_t* ibuf = malloc(sizeof(uint16_t) * frame->header.blocksize * 2);
-  
-  for (int i = 0; i < frame->header.blocksize; i++) {
-    
-    ibuf[i * 2] = (int16_t)buffer[0][i];
-    ibuf[i * 2 + 1] = (int16_t)buffer[1][i];
-  }
+  void *ibuf = NULL;
 
+  switch (bps) {
+  case 16:
+    ibuf = interleave_samples_s16(frame, buffer);
+    break;
+  case 24:
+    ibuf = interleave_samples_s32(frame, buffer);
+    break;
+  default:
+    fprintf(stderr, "unsupported sample size: %d\n", bps);
+    return FLAC__STREAM_DECODER_WRITE_STATUS_ABORT;
+    break;
+  }
+  
   aud_stream_status(frame->header.number.sample_number, total_samples);
 
-  if (aud_write_buf(handle, (void*)ibuf, frame->header.blocksize) < 0) {
+  if (aud_write_buf(handle, ibuf, frame->header.blocksize) < 0) {
     return FLAC__STREAM_DECODER_WRITE_STATUS_ABORT;
   }
 

@@ -107,13 +107,28 @@ aud_write_buf(snd_pcm_t *handle,
 int
 aud_prepare_handle(snd_pcm_t *handle,
 		   int sample_rate,
-		   int channels)
+		   int channels,
+		   int sample_size)
 {
   int err;
-  
+  int sample_format;
+
+  switch (sample_size) {
+  case 16:
+    sample_format = SND_PCM_FORMAT_S16_LE;
+    break;
+  case 24:
+    sample_format = SND_PCM_FORMAT_S24_LE;
+    break;
+  default:
+    fprintf(stderr, "BUG: untested/unsupported sample size: %d\n",
+	    sample_size);
+    break;
+  }
+		  
   set_hw_params(handle,
 		SND_PCM_ACCESS_RW_INTERLEAVED,
-		SND_PCM_FORMAT_S16_LE,
+		sample_format,
 		sample_rate,
 		channels);
 
