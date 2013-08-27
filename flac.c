@@ -12,6 +12,7 @@ static unsigned sample_rate = 0;
 static unsigned channels = 0;
 static unsigned bps = 0;
 
+static int stop;
 
 static void*
 interleave_samples_s32(const FLAC__Frame *frame,
@@ -48,8 +49,10 @@ error_cb(const FLAC__StreamDecoder *decoder,
 	 const FLAC__StreamDecoderErrorStatus status,
 	 void *client_data) {
 
-  fprintf(stderr, "StreamDecoderError: %s",
+  fprintf(stderr, "StreamDecoderError: %s\n",
 	  FLAC__StreamDecoderErrorStatusString[status]);
+
+  FLAC__stream_decoder_finish(decoder);
 }
 
 static void

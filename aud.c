@@ -120,7 +120,7 @@ main(int argc, char **argv)
     case AUD_DEMUXER_OGG:
       
       if ((int)(o_codec = aud_ogg_content(argv[i])) < 0) {
-	fprintf(stderr, "invalid stream: %s", argv[i]);
+	fprintf(stderr, "invalid stream: %s\n", argv[i]);
 	continue;
       }
       
