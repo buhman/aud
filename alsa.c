@@ -64,6 +64,7 @@ stream_recovery(snd_pcm_t *handle, int err)
     err = snd_pcm_prepare(handle);
     if (err < 0)
       fprintf(stderr, "snd_pcm_prepare() : %s\n", snd_strerror(err));
+    printf("snd_pcm_prepare() : %s\n", snd_strerror(err));
     return 0;
   }
   else if (err == -ESTRPIPE) {
@@ -74,6 +75,7 @@ stream_recovery(snd_pcm_t *handle, int err)
       if (err < 0)
 	fprintf(stderr, "snd_pcm_prepare() : %s\n", snd_strerror(err));
     }
+    printf("snd_pcm_prepare() : %s\n", snd_strerror(err));
     return 0;
   }
   return err;
@@ -88,7 +90,10 @@ aud_write_buf(snd_pcm_t *handle,
   
   if ((alsa_err = snd_pcm_wait(handle, 1000)) < 0) {
     fprintf(stderr, "\nsnd_pcm_wait() : %s\n", strerror(errno));
-    return -1;
+    if (alsa_err != -EAGAIN &&
+	(alsa_err = stream_recovery(handle, alsa_err)) < 0) {
+      return -1;
+    }
   }
 
   if ((alsa_err = snd_pcm_writei(handle, buf, frames)) < 0) {
@@ -97,8 +102,6 @@ aud_write_buf(snd_pcm_t *handle,
 	(alsa_err = stream_recovery(handle, alsa_err)) < 0) {
       return -1;
     }
-
-    printf("stream_recovery() : %s\n", snd_strerror(alsa_err));
   }
 
   return 0;
