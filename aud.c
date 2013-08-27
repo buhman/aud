@@ -65,6 +65,7 @@ main(int argc, char **argv)
 
   enum demuxer demuxer;
   char *demuxer_mimetype = NULL;
+  int demuxer_override = false;
   OggzStreamContent o_codec;
 
   while ((opt = getopt_long(argc, argv, "hd:c:", opts, NULL)) > 0) {
@@ -75,6 +76,7 @@ main(int argc, char **argv)
       break;
     case 'd':
       printf("demuxer override: %s\n", optarg);
+      demuxer_override = true;
       demuxer_mimetype = optarg;
       break;
     case 'c':
@@ -101,8 +103,8 @@ main(int argc, char **argv)
   for (int i = optind; i < argc; ++i) {
 
     printf("opening %s\n", argv[i]);
-    
-    if (demuxer_mimetype == NULL &&
+
+    if (!demuxer_override &&
 	(demuxer_mimetype = magic(argv[i])) == NULL) {
       
       fprintf(stderr, "magic() : %s\n", strerror(errno));
