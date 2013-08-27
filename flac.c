@@ -51,8 +51,6 @@ error_cb(const FLAC__StreamDecoder *decoder,
 
   fprintf(stderr, "StreamDecoderError: %s\n",
 	  FLAC__StreamDecoderErrorStatusString[status]);
-
-  FLAC__stream_decoder_finish(decoder);
 }
 
 static void
