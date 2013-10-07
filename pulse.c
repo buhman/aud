@@ -48,7 +48,7 @@ aud_stream_write_cb(pa_stream *stream,
     int written = 0;
     int bytes = 0;
 
-    while (written + bytes < nbytes) {
+    while (written < nbytes) {
       frame = aud_next_frame();
 
       bytes = av_get_bytes_per_sample(frame->format) * frame->nb_samples;
