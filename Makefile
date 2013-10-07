@@ -1,7 +1,7 @@
 TARGET = aud
-LIBS = $(shell pkg-config --libs libpulse libavcodec libavformat libavutil)
+LIBS = $(shell pkg-config --libs libpulse libavcodec libavformat libavutil libswresample)
 CC = gcc
-CFLAGS = -g -Wall -std=c99 $(shell pkg-config --cflags libpulse libavcodec libavformat libavutil)
+CFLAGS = -g -Wall -std=c99 $(shell pkg-config --cflags libpulse libavcodec libavformat libavutil libswresample)
 
 .PHONY: clean all default
 

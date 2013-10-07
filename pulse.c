@@ -3,6 +3,9 @@
 #include <string.h>
 
 #include <libavutil/frame.h>
+#include <libswresample/swresample.h>
+#include <libavutil/opt.h>
+#include <libavutil/channel_layout.h>
 
 #include <pulse/pulseaudio.h>
 
@@ -55,15 +58,37 @@ aud_stream_write_cb(pa_stream *stream,
       written += bytes;
     
       printf("nb_samples: %d ; bytes: %d; written: %d\n",
-           frame->nb_samples,
-           bytes, written);
-    
-      pa_stream_write(stream,
-		      frame->extended_data[0],
-		      bytes,
-		      NULL,
-		      0,
-		      PA_SEEK_RELATIVE);
+	     frame->nb_samples,
+	     bytes, written);
+
+      if (av_sample_fmt_is_planar(frame->format)) {
+	printf("av_sample_fmt_is_planar\n");
+	
+	SwrContext *swr = swr_alloc();
+	
+	av_opt_set_int(swr, "in_channel_layout", AV_CH_LAYOUT_STEREO, 0);
+	av_opt_set_int(swr, "out_channel_layout", AV_CH_LAYOUT_STEREO, 0);
+	av_opt_set_sample_fmt(swr, "in_sample_fmt",
+			      frame->format, 0);
+	av_opt_set_sample_fmt(swr, "out_sample_fmt",
+			      av_get_packed_sample_fmt(frame->format), 0);
+	swr_init(swr);
+
+	uint8_t* data;
+	int linesize;
+	av_samples_alloc(&data, &linesize, frame->channels, frame->nb_samples,
+			 av_get_packed_sample_fmt(frame->format), 0);
+
+	swr_convert(swr, &data, frame->nb_samples,
+		    (const uint8_t**)frame->extended_data, frame->nb_samples);
+	
+	pa_stream_write(stream,
+			data,
+		        linesize,
+			NULL,
+			0,
+			PA_SEEK_RELATIVE);
+      }
     }
   }
 }
