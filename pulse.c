@@ -54,9 +54,9 @@ aud_stream_write_cb(pa_stream *stream,
       bytes = av_get_bytes_per_sample(frame->format) * frame->nb_samples;
       written += bytes;
     
-      //printf("nb_samples: %d ; bytes: %d; written: %d\n",
-      //     frame->nb_samples,
-      //     bytes, written);
+      printf("nb_samples: %d ; bytes: %d; written: %d\n",
+           frame->nb_samples,
+           bytes, written);
     
       pa_stream_write(stream,
 		      frame->extended_data[0],
