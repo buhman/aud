@@ -1,9 +1,10 @@
 #include <stdio.h>
 
+#include "util.h"
 #include "term.h"
 
 int
-aud_input_iterate(int *running)
+aud_iterate_input(callback_data_t *cdata)
 {
   int err;
   
@@ -15,7 +16,7 @@ aud_input_iterate(int *running)
     }
   }
 
-  while (*running) {
+  while (1) {
 
     switch (getchar()) {
     case 27:

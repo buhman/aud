@@ -1,19 +1,19 @@
-#include <inttypes.h>
-
 #include <alsa/asoundlib.h>
 
-#include <libavutil/opt.h>
 #include <libavutil/channel_layout.h>
 #include <libavutil/samplefmt.h>
 #include <libswresample/swresample.h>
 #include <libavcodec/avcodec.h>
 
+#include "lavf.h"
+#include "util.h"
+
 static const snd_pcm_format_t avsf_spf[] = {
   SND_PCM_FORMAT_U8, //AV_SAMPLE_FMT_U8
-  SND_PCM_FORMAT_S16, //AV_SAMPLE_FMT_S16 
-  SND_PCM_FORMAT_S32, //AV_SAMPLE_FMT_S32
-  SND_PCM_FORMAT_FLOAT, //AV_SAMPLE_FMT_FLT
-  SND_PCM_FORMAT_FLOAT64, //AV_SAMPLE_FMT_DBL
+  SND_PCM_FORMAT_S16_LE, //AV_SAMPLE_FMT_S16 
+  SND_PCM_FORMAT_S32_LE, //AV_SAMPLE_FMT_S32
+  SND_PCM_FORMAT_FLOAT_LE, //AV_SAMPLE_FMT_FLT
+  SND_PCM_FORMAT_FLOAT64_LE, //AV_SAMPLE_FMT_DBL
 }; 
 
 snd_pcm_format_t
@@ -28,49 +28,55 @@ aud_avsf_to_spf(enum AVSampleFormat iformat)
   }
 }
 
-int
-aud_open_resampler(SwrContext **swr_context,
-		   AVCodecContext *codec_context,
-		   unsigned int rate,
-		   unsigned int channels)
+ssize_t
+aud_write_callback(callback_data_t *cdata,
+		   void *out_buf,
+		   ssize_t out_size)
 {
-  uint64_t output_layout;
+  ssize_t commit = 0;
+  ssize_t written = 0;
+  AVFrame *frame;
+
+  int channels;
+  int sample_size;
   
-  int err;
+  while (1) {
+    frame = aud_next_frame(cdata->format_context,
+			   cdata->codec_context,
+			   cdata->stream_index);
 
-  {
-    swr_free(swr_context);
-  } /* ... */
+    if (cdata->swr_context) {
+      //printf("DEBUG: swr_context != NULL\n");
 
-  {
-    if (av_sample_fmt_is_planar(codec_context->sample_fmt) ||
-	codec_context->sample_rate != rate ||
-	codec_context->channels != channels) {
+      //channels = av_get_channel_layout_nb_channels(cdata->swr_context->out_ch_layout);
+      //sample_size = av_get_bytes_per_sample(cdata->swr_context->out_sample_fmt);
+      channels = av_get_channel_layout_nb_channels(frame->channel_layout);
+      sample_size = av_get_bytes_per_sample(frame->format);
 
-      *swr_context = swr_alloc();
+      commit = frame->nb_samples * sample_size * channels;
+      if (commit > out_size) {
+	printf("DEBUG: OVERFLOW! didn't handle it; just bailed lul (FIXME)\n");
+	return written;
+      }
 
-      err = av_get_standard_channel_layout(channels, &output_layout,
-					   NULL);
-      if (err < 0)
-	return err;
+      swr_convert(cdata->swr_context, (uint8_t**)&out_buf, frame->nb_samples,
+		  (const uint8_t**)frame->extended_data, frame->nb_samples);
 
-      printf("DEBUG channel map: %" PRIu64 " -> %" PRIu64 "\n",
-	     codec_context->channel_layout, output_layout);
-      
-      av_opt_set_int(*swr_context, "in_channel_layout",
-		     codec_context->channel_layout, 0);
-      av_opt_set_int(*swr_context, "in_sample_rate",
-		     codec_context->sample_rate, 0);
-      av_opt_set_sample_fmt(*swr_context, "in_sample_fmt",
-			    codec_context->sample_fmt, 0);
-      
-      av_opt_set_int(*swr_context, "out_channel_layout", output_layout, 0);
-      av_opt_set_int(*swr_context, "out_sample_rate", rate, 0);
-      av_opt_set_sample_fmt(*swr_context, "out_sample_format",
-			    av_get_packed_sample_fmt(codec_context->sample_fmt),
-			    0);
+      written += commit;
+
+      printf("commit: %lu; out_size: %lu\n", commit, out_size);
+      if (commit * 4 < out_size) {
+	//printf("commit * 2 < out_size\n");
+	out_size -= commit;
+	out_buf = ((char*)(out_buf)) + (commit);
+	continue;
+      }
+
+      return written;
+    }
+    else {
+      printf("DEBUG: unimplemented non-swr write\n");
+      return written;
     }
   }
-
-  return 0;
 }

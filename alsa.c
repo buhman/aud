@@ -4,6 +4,8 @@
 
 #include <alsa/asoundlib.h>
 
+#include "util.h"
+
 static snd_pcm_uframes_t buffer_size, period_size;
 
 static int
@@ -159,8 +161,10 @@ data_write_callback(snd_async_handler_t *handler)
 {
   int err;
   snd_pcm_t *pcm;
+  callback_data_t *cdata;
 
   pcm = snd_async_handler_get_pcm(handler);
+  cdata = snd_async_handler_get_callback_private(handler);
 
   //int state = snd_pcm_state(pcm);
   
@@ -183,25 +187,19 @@ data_write_callback(snd_async_handler_t *handler)
     }
 
     void *addr = ((char*)(area->addr)) + (offset * 2);
-    ssize_t size = 0;//read(fd, addr, frames * 2);
+    //ssize_t size = read(fd, addr, frames * 2);
+    ssize_t size = aud_write_callback(cdata, addr,
+				      snd_pcm_frames_to_bytes(pcm, frames));
     
-    if (size == 0 && frames != 0) {
-      //running = 0;
-    }
-    
-    if (size != frames * 2) {
-      printf("read(): f%lu != s%lu\n", frames, size);
-      //return;
-    }
-    
-    commit = snd_pcm_mmap_commit(pcm, offset, frames);
+    commit = snd_pcm_mmap_commit(pcm, offset,
+				 snd_pcm_bytes_to_frames(pcm, size));
     if (commit < 0) {
       printf("snd_pcm_mmap_commit(): %s\n", snd_strerror(commit));
-      return;
+      //return;
     }
     if (commit != frames) {
       printf("snd_pcm_mmap_commit(): f%lu != c%lu\n", frames, commit);
-      return;
+      //return;
     }
 
     snd_pcm_start(pcm);
@@ -260,10 +258,11 @@ aud_snd_pcm_init(snd_pcm_t *pcm,
 int
 aud_snd_pcm_start(snd_pcm_t *pcm,
 		  snd_async_handler_t **handler,
-		  void* data)
+		  void *data)
 {
   {
-    snd_async_del_handler(*handler);
+    if (*handler)
+      snd_async_del_handler(*handler);
     *handler = NULL;
   } /* ... */
   {

@@ -1,7 +1,11 @@
+#include <inttypes.h>
+
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
+#include <libswresample/swresample.h>
+#include <libavutil/opt.h>
 
-AVFrame *frame;
+AVFrame *frame = NULL;
 AVPacket packet;
 
 AVFrame*
@@ -50,6 +54,80 @@ aud_next_frame(AVFormatContext *format_context,
 }
 
 int
+aud_open_resampler(SwrContext **swr_context,
+		   AVCodecContext *codec_context,
+		   unsigned int rate,
+		   unsigned int channels)
+{
+  uint64_t output_layout;
+  
+  int err;
+
+  {
+    if (*swr_context)
+      swr_free(swr_context);
+  } /* ... */
+
+  {
+    if (av_sample_fmt_is_planar(codec_context->sample_fmt) ||
+	codec_context->sample_rate != rate ||
+	codec_context->channels != channels) {
+
+      *swr_context = swr_alloc();
+      if (!(*swr_context)) {
+	printf("swr_alloc(): NULL\n");
+	return -1;
+      }
+
+      err = av_get_standard_channel_layout(channels, &output_layout,
+					   NULL);
+      if (err < 0) {
+	printf("av_get_standard_channel_layout(): %d\n", err);
+	return err;
+      }
+
+      printf("DEBUG: channel map: %" PRIu64 " -> %" PRIu64 "\n",
+	     codec_context->channel_layout, output_layout);
+
+      /*
+      av_opt_set_int(*swr_context, "in_channel_layout",
+		     codec_context->channel_layout, 0);
+      av_opt_set_int(*swr_context, "in_sample_rate",
+		     codec_context->sample_rate, 0);
+      av_opt_set_sample_fmt(*swr_context, "in_sample_fmt",
+			    codec_context->sample_fmt, 0);
+      
+      av_opt_set_int(*swr_context, "out_channel_layout", output_layout, 0);
+      av_opt_set_int(*swr_context, "out_sample_rate", rate, 0);
+      av_opt_set_sample_fmt(*swr_context, "out_sample_format",
+			    av_get_packed_sample_fmt(codec_context->sample_fmt),
+			    0);
+      */
+      swr_alloc_set_opts(*swr_context,
+			 //output
+			 codec_context->channel_layout, //FIXEM
+			 //output_layout,
+			 av_get_packed_sample_fmt(codec_context->sample_fmt),
+			 rate,
+			 //input
+			 codec_context->channel_layout,
+			 codec_context->sample_fmt,
+			 codec_context->sample_rate,
+			 //log
+			 0, 0);
+      
+      err = swr_init(*swr_context);
+      if (err < 0) {
+	printf("swr_init(): %d %s\n", err, av_err2str(err));
+	return err;
+      }
+    }
+  }
+
+  return 0;
+}
+
+int
 aud_open_codec(AVFormatContext *format_context,
 	       AVCodecContext **codec_context,
 	       int stream_index)
@@ -75,7 +153,8 @@ aud_open_codec(AVFormatContext *format_context,
   } /* ... */
 
   {
-    avcodec_free_frame(&frame);
+    if (frame)
+      avcodec_free_frame(&frame);
     frame = avcodec_alloc_frame();
     
     av_init_packet(&packet);
@@ -90,7 +169,7 @@ int
 aud_find_audio_index(AVFormatContext *format_context)
 {
   int err;
-  
+
   {
     if ((err = av_find_best_stream(format_context,
 				   AVMEDIA_TYPE_AUDIO,
@@ -112,7 +191,8 @@ aud_open_input(char *filename,
   {
     av_register_all();
 
-    avformat_close_input(format_context);
+    if (*format_context)
+      avformat_close_input(format_context);
     if ((err = avformat_open_input(format_context,
 				   filename, NULL, NULL)) < 0) {
       printf("avformat_open_input(): %d: %s", err, av_err2str(err));

@@ -1,2 +1,4 @@
+#include "util.h"
+
 int
-aud_interate_input();
+aud_iterate_input(callback_data_t *cdata);

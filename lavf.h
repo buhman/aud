@@ -2,11 +2,18 @@
 
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
+#include <libswresample/swresample.h>
 
 AVFrame*
 aud_next_frame(AVFormatContext *format_context,
 	       AVCodecContext *codec_context,
 	       int stream_index);
+
+int
+aud_open_resampler(SwrContext **swr_context,
+		   AVCodecContext *codec_context,
+		   unsigned int rate,
+		   unsigned int channels);
 
 int
 aud_open_codec(AVFormatContext *format_context,

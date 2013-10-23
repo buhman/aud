@@ -1,6 +1,7 @@
 #include "alsa.h"
 #include "lavf.h"
 #include "util.h"
+#include "input.h"
 
 static snd_pcm_t *pcm = NULL;
 static snd_async_handler_t *handler = NULL;
@@ -53,13 +54,25 @@ file_playback(char *filename)
   } /* ... */
 
   {
-    //err = aud_open_resampler(&swr_context, codec_context,
-    //		     pcm_rate, pcm_channels);
+    err = aud_open_resampler(&swr_context, codec_context,
+			     pcm_rate, pcm_channels);
     if (err < 0)
       return err;
-    aud_snd_pcm_start(pcm, &handler, NULL);
   } /* ... */
 
+  {
+    callback_data_t cdata = {
+      .format_context = format_context,
+      .codec_context = codec_context,
+      .stream_index = stream_index,
+      .swr_context = swr_context
+    };
+    
+    aud_snd_pcm_start(pcm, &handler, &cdata);
+
+    aud_iterate_input(&cdata);
+  } /* ... */
+  
   return 0;
 }
 
