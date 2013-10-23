@@ -1,113 +1,85 @@
-#include <stdio.h>
-#include <getopt.h>
-
-#include <libavformat/avformat.h>
-#include <libavcodec/avcodec.h>
-
-#include <pulse/pulseaudio.h>
-
-#include "aud.h"
-#include "pulse.h" 
+#include "alsa.h"
 #include "lavf.h"
+#include "util.h"
 
-static AVFormatContext *format_context;
-static AVCodecContext *codec_context;
+static snd_pcm_t *pcm = NULL;
+static snd_async_handler_t *handler = NULL;
 
-static pa_mainloop *loop;
+static AVFormatContext *format_context = NULL;
+static AVCodecContext *codec_context = NULL;
+static SwrContext *swr_context = NULL;
+static int stream_index;
 
-static int ret;
+static snd_pcm_format_t pcm_format;
+static unsigned int pcm_rate;
+static unsigned int pcm_channels;
 
-static char **opts;
-static int optlen;
-
-static AVFrame *frame;
-static AVPacket packet;
-static AVPacket orig_packet;
-
-static int got_frame;
-
-AVFrame*
-aud_next_packet() {
-  //printf("packet.stream_index: %d\n", packet.stream_index);
+static int
+file_playback(char *filename)
+{
+  int err;
   
-  if (packet.stream_index == 0) { //FIXME
-    ret = avcodec_decode_audio4(codec_context, frame, &got_frame, &packet);
+  {
+    err = aud_open_input(filename, &format_context);
+    if (err < 0)
+      return err;
 
-    packet.data += ret;
-    packet.size -= ret;
+    stream_index = aud_find_audio_index(format_context);
+    if (stream_index < 0)
+      return err;
 
-    ret = FFMIN(ret, packet.size);
+    err = aud_open_codec(format_context, &codec_context, stream_index);
+    if (err < 0)
+      return err;
 
-    if (got_frame) {
-      return frame;
-    }
-    else {
-      printf("no got_frame");
-      return NULL;
-    }
+    printf("DEBUG: refcounted_frames: %d\n", codec_context->refcounted_frames);
+  } /* ... */
+
+  {
+    pcm_format = aud_avsf_to_spf(codec_context->sample_fmt);
+    pcm_rate = codec_context->sample_rate;
+    pcm_channels = codec_context->channels;
+
+    printf("DEBUG: requested: %d; %d; %d\n",
+	   pcm_format, pcm_rate, pcm_channels);
     
-  } else {
-    packet.size = 0;
-    return aud_next_frame();
-  }
-}
+    err = aud_snd_pcm_init(pcm, &pcm_format, &pcm_rate, &pcm_channels);
+    if (err < 0)
+      return err;
 
-AVFrame*
-aud_next_frame()
-{
-  if (packet.size > 0) {
-    return aud_next_packet();
-  }
-  else if (av_read_frame(format_context, &packet) >= 0) {
-    av_free_packet(&orig_packet);
-    orig_packet = packet;
-    return aud_next_packet();
-  }
-  else {
-    printf("out of frames\n");
-    return NULL;
-  }
-}
+    printf("DEBUG: actual: %d; %d; %d\n",
+	   pcm_format, pcm_rate, pcm_channels);
 
-void
-aud_next_song(pa_context *context)
-{
-  aud_open_audio(opts[optind], &format_context);
-  aud_open_audio_codec(format_context, &codec_context);
+  } /* ... */
 
-  const pa_sample_spec ss = {
-    .format = aud_sample_format[codec_context->sample_fmt],
-    .rate = codec_context->sample_rate,
-    .channels = codec_context->channels
-  };
+  {
+    //err = aud_open_resampler(&swr_context, codec_context,
+    //		     pcm_rate, pcm_channels);
+    if (err < 0)
+      return err;
+    aud_snd_pcm_start(pcm, &handler, NULL);
+  } /* ... */
 
-  optind++;
-  
-  aud_new_stream(context,
-		 &ss);
+  return 0;
 }
 
 int
-main(int argc, char **argv)
+main(int argc,
+     char **argv)
 {
-  opts = argv;
-  optlen = argc;
-  
-  {
-    frame = avcodec_alloc_frame();
-    
-    av_init_packet(&packet);
-    packet.data = NULL;
-    packet.size = 0;
-  } /* ... */
-  
-  {
-    loop = pa_mainloop_new();
-    
-    aud_create_pa_context(pa_mainloop_get_api(loop));
+  int err;
 
-    pa_mainloop_run(loop, &ret);
+  {
+    err = aud_snd_pcm_open("hw:1,0", &pcm);
+    if (err < 0)
+      return err;
   } /* ... */
 
-  return ret;
+  file_playback(argv[1]);
+
+  {
+    snd_pcm_close(pcm);
+  } /* ... */
+  
+  return 0;
 }

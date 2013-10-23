@@ -1,7 +1,7 @@
 TARGET = aud
-LIBS = $(shell pkg-config --libs libpulse libavcodec libavformat libavutil libswresample)
+LIBS = -lasound -lavformat -lavcodec -lavutil -lswresample
 CC = gcc
-CFLAGS = -g -Wall -std=c99 $(shell pkg-config --cflags libpulse libavcodec libavformat libavutil libswresample)
+CFLAGS = -g -Wall -D__STDC_FORMAT_MACROS
 
 .PHONY: clean all default
 

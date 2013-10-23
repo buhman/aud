@@ -1,101 +1,127 @@
-#include <stdio.h>
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 
-#include <pulse/pulseaudio.h>
+AVFrame *frame;
+AVPacket packet;
 
-#include "lavf.h"
+AVFrame*
+aud_next_frame(AVFormatContext *format_context,
+	       AVCodecContext *codec_context,
+	       int stream_index)
+{
+  int err;
+  int got_frame;
 
-static int ret;
+  while (1) {
+    if (packet.size <= 0) {
+      av_free_packet(&packet);
+      err = av_read_frame(format_context, &packet);
+    
+      if (err < 0) {
+	printf("av_read_frame(): %d", err);
+	return NULL;
+      }
+    }
 
-/*
-enum AVSampleFormat {
-  AV_SAMPLE_FMT_NONE = -1,
-  AV_SAMPLE_FMT_U8, ///< unsigned 8 bits
-  AV_SAMPLE_FMT_S16, ///< signed 16 bits
-  AV_SAMPLE_FMT_S32, ///< signed 32 bits
-  AV_SAMPLE_FMT_FLT, ///< float
-  AV_SAMPLE_FMT_DBL, ///< double
-  AV_SAMPLE_FMT_U8P, ///< unsigned 8 bits, planar
-  AV_SAMPLE_FMT_S16P, ///< signed 16 bits, planar
-  AV_SAMPLE_FMT_S32P, ///< signed 32 bits, planar
-  AV_SAMPLE_FMT_FLTP, ///< float, planar
-  AV_SAMPLE_FMT_DBLP, ///< double, planar
-};
-*/
+    if (packet.stream_index == stream_index) {
+      if (codec_context->refcounted_frames)
+	av_frame_unref(frame);
+      err = avcodec_decode_audio4(codec_context, frame, &got_frame, &packet);
 
-const pa_sample_format_t aud_sample_format[] = {
-  PA_SAMPLE_U8,
-  PA_SAMPLE_S16LE,
-  PA_SAMPLE_S32LE,
-  PA_SAMPLE_FLOAT32LE,
-  PA_SAMPLE_INVALID, // No double in PA?
-  PA_SAMPLE_U8, // U8P
-  PA_SAMPLE_S16LE, // S16P
-  PA_SAMPLE_S32LE, // S32P
-  PA_SAMPLE_FLOAT32LE, // FLTP
-  PA_SAMPLE_INVALID, // DBLP
-};
+      if (err < 0) {
+	printf("avcodec_decode_audio4(): %d\n", err);
+	return NULL;
+      }
+      
+      packet.data += err;
+      packet.size -= err;
+
+      if (got_frame) {
+	return frame;
+      }
+
+      printf("avcodec_decode_audio4(): got_frame == 0\n");
+    }
+    else {
+      // discard packet
+      packet.size = 0;
+    }
+  }
+}
 
 int
 aud_open_codec(AVFormatContext *format_context,
-	       int stream_index,
-	       AVCodecContext **codec_context)
+	       AVCodecContext **codec_context,
+	       int stream_index)
 {
   AVCodec *codec;
   AVStream *stream;
-
+  int err;
+  
   {
     stream = format_context->streams[stream_index];
     *codec_context = stream->codec;
 
     if (!(codec = avcodec_find_decoder((*codec_context)->codec_id))) {
       printf("avcodec_find_decoder(): NULL");
-      return ret;
+      return -1;
     }
 
-    if ((ret = avcodec_open2(*codec_context, codec, NULL)) < 0) {
-      printf("avcodec_open2(): %d: %s", ret, av_err2str(ret));
-      return ret;
+    if ((err = avcodec_open2(*codec_context, codec, NULL)) < 0) {
+      printf("avcodec_open2(): %d: %s", err, av_err2str(err));
+      return err;
     }
     
   } /* ... */
 
+  {
+    avcodec_free_frame(&frame);
+    frame = avcodec_alloc_frame();
+    
+    av_init_packet(&packet);
+    packet.data = NULL;
+    packet.size = 0;
+  } /* ... */
+  
   return 0;
 }
 
 int
-aud_open_audio_codec(AVFormatContext *format_context,
-		     AVCodecContext **codec_context)
+aud_find_audio_index(AVFormatContext *format_context)
 {
+  int err;
+  
   {
-    if ((ret = av_find_best_stream(format_context,
+    if ((err = av_find_best_stream(format_context,
 				   AVMEDIA_TYPE_AUDIO,
 				   -1, -1, NULL, 0)) < 0) {
-      printf("av_find_best_stream(): %d: %s", ret, av_err2str(ret));
-      return ret;
+      printf("av_find_best_stream(): %d: %s", err, av_err2str(err));
+      return err;
     }
   } /* ... */
 
-  return aud_open_codec(format_context, ret, codec_context);
+  return err;
 }
 
 int
-aud_open_audio(char *filename,
+aud_open_input(char *filename,
 	       AVFormatContext **format_context)
 {
+  int err;
+  
   {
     av_register_all();
 
-    if ((ret = avformat_open_input(format_context,
+    avformat_close_input(format_context);
+    if ((err = avformat_open_input(format_context,
 				   filename, NULL, NULL)) < 0) {
-      printf("avformat_open_input(): %d: %s", ret, av_err2str(ret));
-      return ret;
+      printf("avformat_open_input(): %d: %s", err, av_err2str(err));
+      return err;
     }
 
-    if ((ret = avformat_find_stream_info(*format_context, NULL)) < 0) {
-      printf("avformat_find_stream_info(): %d: %s", ret, av_err2str(ret));
-      return ret;
+    if ((err = avformat_find_stream_info(*format_context, NULL)) < 0) {
+      printf("avformat_find_stream_info(): %d: %s", err, av_err2str(err));
+      return err;
     }
 
     av_dump_format(*format_context, 0, filename, 0);
