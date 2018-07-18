@@ -20,7 +20,7 @@ aud_next_frame(AVFormatContext *format_context,
     if (packet.size <= 0) {
       av_free_packet(&packet);
       err = av_read_frame(format_context, &packet);
-    
+
       if (err < 0) {
 	printf("av_read_frame(): %d", err);
 	return NULL;
@@ -36,7 +36,7 @@ aud_next_frame(AVFormatContext *format_context,
 	printf("avcodec_decode_audio4(): %d\n", err);
 	return NULL;
       }
-      
+
       packet.data += err;
       packet.size -= err;
 
@@ -60,7 +60,7 @@ aud_open_resampler(SwrContext **swr_context,
 		   unsigned int channels)
 {
   uint64_t output_layout;
-  
+
   int err;
 
   {
@@ -96,7 +96,7 @@ aud_open_resampler(SwrContext **swr_context,
 		     codec_context->sample_rate, 0);
       av_opt_set_sample_fmt(*swr_context, "in_sample_fmt",
 			    codec_context->sample_fmt, 0);
-      
+
       av_opt_set_int(*swr_context, "out_channel_layout", output_layout, 0);
       av_opt_set_int(*swr_context, "out_sample_rate", rate, 0);
       av_opt_set_sample_fmt(*swr_context, "out_sample_format",
@@ -115,7 +115,7 @@ aud_open_resampler(SwrContext **swr_context,
 			 codec_context->sample_rate,
 			 //log
 			 0, 0);
-      
+
       err = swr_init(*swr_context);
       if (err < 0) {
 	printf("swr_init(): %d %s\n", err, av_err2str(err));
@@ -135,7 +135,7 @@ aud_open_codec(AVFormatContext *format_context,
   AVCodec *codec;
   AVStream *stream;
   int err;
-  
+
   {
     stream = format_context->streams[stream_index];
     *codec_context = stream->codec;
@@ -149,19 +149,19 @@ aud_open_codec(AVFormatContext *format_context,
       printf("avcodec_open2(): %d: %s", err, av_err2str(err));
       return err;
     }
-    
+
   } /* ... */
 
   {
     if (frame)
-      avcodec_free_frame(&frame);
-    frame = avcodec_alloc_frame();
-    
+      av_frame_free(&frame);
+    frame = av_frame_alloc();
+
     av_init_packet(&packet);
     packet.data = NULL;
     packet.size = 0;
   } /* ... */
-  
+
   return 0;
 }
 
@@ -187,7 +187,7 @@ aud_open_input(char *filename,
 	       AVFormatContext **format_context)
 {
   int err;
-  
+
   {
     av_register_all();
 
